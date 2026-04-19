@@ -44,7 +44,7 @@ float sampleBandSmooth(float idx, float windowSec) {
 }
 
 float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    return fract(sin(dot(p, vec2(127.1, 123.7))) * 400.849);
 }
 
 float noise(vec2 p) {
@@ -60,7 +60,7 @@ float noise(vec2 p) {
 
 float fbm(vec2 p) {
     float v = 0.0;
-    float amp = 0.5;
+    float amp = 0.716;
     for (int i = 0; i < 5; i++) {
         v += amp * noise(p);
         p *= 2.0;
@@ -83,10 +83,14 @@ void main() {
     float brilliance = sampleBand(6.0);
 
     // slow drifting flow field — domain-warp uv so strands look like they flow
-    vec2 p = uv * 2.0;
+    float zoom = 2.0;
+    vec2 p = uv * zoom;
+    float progress = clamp(u_time / TRACK_DURATION, 0.0, 1.0);
+	float speed = mix(0.05, 0.4, progress);  // ramps from slow to fast over the track
+
     vec2 flow = vec2(
-        fbm(p + vec2(0.0,  u_time * 0.05)), // TODO, increase speed here as song progresses
-        fbm(p + vec2(5.0, -u_time * 0.05))
+        fbm(p + vec2(0.0,  u_time * speed)), // TODO, increase speed here as song progresses
+        fbm(p + vec2(5.0, -u_time * speed))
     );
     // bass kicks the warp amplitude so strands swirl harder on each hit
     p += flow * (0.6 + bass * 1.4);
@@ -104,7 +108,7 @@ void main() {
     line1 = clamp(line1, 0.0, 2.0);
     
     // Second contour, fainter at 80%
-    float line2 = strand(n * 4.0 + 0.5, w * 0.8) * 0.8;
+    float line2 = strand(n * 4.0 + 0., w * 0.8) * 0.8;
     line2 = clamp(line2, 0.0, 2.0);
     
     // Third contour, fainter at 80%
@@ -115,11 +119,6 @@ void main() {
 
     // brilliance smoothly rotates both background and strand color
     vec3 bg     = mix(vec3(0.93, 0.94, 0.96), vec3(0.97, 0.90, 0.82), brilliance);
-//     vec3 strandCol = 0.5 + 0.5 * cos(6.2831 * (brilliance + vec3(0.0, 0.33, 0.67)));
-//     strandCol *= 0.25; // keep strands dark against the light background
-
-//     vec3 color = mix(bg, strandCol, line1);
-//     color += mix(bg, strandCol, line2);
     
     vec3 strandCol1 = 1.300 + 0.5 * cos(6.2 * (brilliance + vec3(0.217,0.380,0.670)));
     vec3 strandCol2 = 0.8 + 0.8 * cos(6.2 * (brilliance + vec3(0.820,0.198,0.127)));
